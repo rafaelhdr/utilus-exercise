@@ -46,4 +46,4 @@ htmlcov/
 
 # Data files
 *.csv
-output.json
+output*.json

@@ -10,6 +10,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=7.0",
+    "freezegun>=1.0",
 ]
 
 [tool.pytest.ini_options]

@@ -17,11 +17,11 @@ def calculate_mrr(
     if not subscriptions:
         return []
 
-    all_dates: list[date] = [s.start_date for s in subscriptions]
-    all_dates += [s.end_date for s in subscriptions if s.end_date is not None]
-
-    min_date = min(all_dates)
-    end_date = min(today, max(all_dates))
+    min_date = min(s.start_date for s in subscriptions)
+    effective_ends = [
+        s.end_date if s.end_date is not None else today for s in subscriptions
+    ]
+    end_date = min(today, max(effective_ends))
 
     if end_date < min_date:
         return []

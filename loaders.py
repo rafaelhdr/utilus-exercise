@@ -19,6 +19,16 @@ def _parse_date(value: object) -> date | None:
     return date.fromisoformat(s)
 
 
+_PRICE_WORDS: dict[str, float] = {"thirty": 30}
+
+
+def _parse_price(value: object) -> float:
+    s = str(value).strip().lower()
+    if s in _PRICE_WORDS:
+        return _PRICE_WORDS[s]
+    return float(s)
+
+
 def load_subscriptions(filepath: str) -> list[Subscription]:
     df = pd.read_csv(filepath)
     subscriptions: list[Subscription] = []
@@ -29,7 +39,7 @@ def load_subscriptions(filepath: str) -> list[Subscription]:
                 continue
 
             end_date = _parse_date(row["end_date"])
-            monthly_price = float(row["monthly_price"])
+            monthly_price = _parse_price(row["monthly_price"])
 
             if end_date is not None and end_date < start_date:
                 continue
