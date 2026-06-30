@@ -19,14 +19,8 @@ def _parse_date(value: object) -> date | None:
     return date.fromisoformat(s)
 
 
-_PRICE_WORDS: dict[str, float] = {"thirty": 30}
-
-
 def _parse_price(value: object) -> float:
-    s = str(value).strip().lower()
-    if s in _PRICE_WORDS:
-        return _PRICE_WORDS[s]
-    return float(s)
+    return float(str(value).strip())
 
 
 def load_customers(filepath: str) -> list[Customer]:
@@ -46,7 +40,8 @@ def load_customers(filepath: str) -> list[Customer]:
                     country=country if country else None,
                 )
             )
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            print(f"[loaders] skipping customer row {dict(row)}: {e}")
             continue
     return customers
 
@@ -75,6 +70,7 @@ def load_subscriptions(filepath: str) -> list[Subscription]:
                     monthly_price=monthly_price,
                 )
             )
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            print(f"[loaders] skipping subscription row {dict(row)}: {e}")
             continue
     return subscriptions
