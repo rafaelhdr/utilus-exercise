@@ -4,7 +4,7 @@ from datetime import date
 
 import pandas as pd
 
-from models import Subscription
+from models import Customer, Subscription
 
 
 def _parse_date(value: object) -> date | None:
@@ -27,6 +27,28 @@ def _parse_price(value: object) -> float:
     if s in _PRICE_WORDS:
         return _PRICE_WORDS[s]
     return float(s)
+
+
+def load_customers(filepath: str) -> list[Customer]:
+    df = pd.read_csv(filepath)
+    customers: list[Customer] = []
+    for _, row in df.iterrows():
+        try:
+            signup_date = _parse_date(row["signup_date"])
+            if signup_date is None:
+                continue
+            country_val = row.get("country")
+            country = str(country_val).strip() if pd.notna(country_val) else None
+            customers.append(
+                Customer(
+                    customer_id=str(row["customer_id"]).strip(),
+                    signup_date=signup_date,
+                    country=country if country else None,
+                )
+            )
+        except (ValueError, TypeError):
+            continue
+    return customers
 
 
 def load_subscriptions(filepath: str) -> list[Subscription]:

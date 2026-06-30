@@ -2,8 +2,8 @@ from datetime import date
 
 from freezegun import freeze_time
 
-from metrics import calculate_churn, calculate_mrr
-from models import MRREntry, Subscription
+from metrics import calculate_churn, calculate_cohort_retention, calculate_mrr
+from models import Customer, MRREntry, Subscription
 
 
 class TestMRR:
@@ -109,3 +109,56 @@ class TestChurn:
 
         january = next(e for e in result if e.start_date == date(2024, 1, 1))
         assert january.churned_customers == 1
+
+
+class TestCohortRetention:
+    def _make_sub(self, customer_id: str, start: date, end: date | None, price: float = 100.0) -> Subscription:
+        return Subscription(customer_id=customer_id, start_date=start, end_date=end, plan="basic", monthly_price=price)
+
+    def _make_customer(self, customer_id: str, signup: date) -> Customer:
+        return Customer(customer_id=customer_id, signup_date=signup)
+
+    def test_all_retained_after_3_months(self) -> None:
+        customers = [
+            self._make_customer("C001", date(2024, 1, 1)),
+            self._make_customer("C002", date(2024, 1, 15)),
+        ]
+        subscriptions = [
+            self._make_sub("C001", date(2024, 1, 1), None),
+            self._make_sub("C002", date(2024, 1, 1), None),
+        ]
+
+        result = calculate_cohort_retention(customers, subscriptions, today=date(2024, 4, 30))
+
+        jan = next(e for e in result if e.start_date == date(2024, 1, 1))
+        assert jan.cohort == 2
+        assert jan.active_after_3_months == 2
+        assert jan.retention_rate_3_months == 1.0
+
+    def test_zero_active_when_3_month_window_not_reached(self) -> None:
+        # Today is still within the same month as signup; 3-month window is in the future
+        customers = [self._make_customer("C001", date(2024, 1, 1))]
+        subscriptions = [self._make_sub("C001", date(2024, 1, 1), None)]  # open-ended
+
+        result = calculate_cohort_retention(customers, subscriptions, today=date(2024, 1, 31))
+
+        jan = next(e for e in result if e.start_date == date(2024, 1, 1))
+        assert jan.active_after_3_months == 0
+        assert jan.retention_rate_3_months == 0.0
+
+    def test_partial_retention_after_3_months(self) -> None:
+        customers = [
+            self._make_customer("C001", date(2024, 1, 1)),
+            self._make_customer("C002", date(2024, 1, 1)),
+        ]
+        subscriptions = [
+            self._make_sub("C001", date(2024, 1, 1), None),
+            self._make_sub("C002", date(2024, 1, 1), date(2024, 2, 28)),  # churns before April
+        ]
+
+        result = calculate_cohort_retention(customers, subscriptions, today=date(2024, 4, 30))
+
+        jan = next(e for e in result if e.start_date == date(2024, 1, 1))
+        assert jan.cohort == 2
+        assert jan.active_after_3_months == 1
+        assert jan.retention_rate_3_months == 0.5
