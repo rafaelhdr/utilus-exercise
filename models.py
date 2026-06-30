@@ -18,3 +18,9 @@ class MRREntry(BaseModel):
     start_date: date
     end_date: date
     mrr: float
+
+
+class ChurnEntry(BaseModel):
+    start_date: date
+    end_date: date
+    churned_customers: int

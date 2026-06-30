@@ -4,7 +4,7 @@ import json
 import sys
 
 from loaders import load_subscriptions
-from metrics import calculate_mrr
+from metrics import calculate_churn, calculate_mrr
 
 
 def main() -> None:
@@ -15,15 +15,18 @@ def main() -> None:
     _, __, subscriptions_path, output_path = sys.argv
 
     subscriptions = load_subscriptions(subscriptions_path)
-    mrr_entries = calculate_mrr(subscriptions)
+    mrr_entries = {e.start_date: e for e in calculate_mrr(subscriptions)}
+    churn_entries = {e.start_date: e for e in calculate_churn(subscriptions)}
 
+    all_months = sorted(set(mrr_entries) | set(churn_entries))
     output = [
         {
-            "start_date": entry.start_date.isoformat(),
-            "end_date": entry.end_date.isoformat(),
-            "mrr": entry.mrr,
+            "start_date": month.isoformat(),
+            "end_date": (mrr_entries.get(month) or churn_entries[month]).end_date.isoformat(),
+            "mrr": mrr_entries[month].mrr if month in mrr_entries else 0.0,
+            "churned_customers": churn_entries[month].churned_customers if month in churn_entries else 0,
         }
-        for entry in mrr_entries
+        for month in all_months
     ]
 
     with open(output_path, "w") as f:
