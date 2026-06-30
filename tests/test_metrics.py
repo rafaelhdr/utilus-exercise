@@ -3,7 +3,7 @@ from datetime import date
 from freezegun import freeze_time
 
 from metrics import calculate_churn, calculate_mrr
-from models import ChurnEntry, MRREntry, Subscription
+from models import MRREntry, Subscription
 
 
 class TestMRR:
